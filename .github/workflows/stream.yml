@@ -1,0 +1,63 @@
+name: Live Football Streamer (Microsoft Cloud)
+
+on:
+  workflow_dispatch:
+    inputs:
+      channel:
+        description: 'Kanalni tanlang:'
+        required: true
+        default: 'setanta1'
+        type: choice
+        options:
+          - 'setanta1 (Setanta Sports 1 HD)'
+          - 'setanta2 (Setanta Sports 2 HD)'
+          - 'zortv (Zor TV HD)'
+          - 'custom (O‘z havolangiz)'
+      custom_stream_url:
+        description: 'Agar "custom" bo‘lsa, m3u8 havolasi:'
+        required: false
+        default: ''
+      telegram_server:
+        description: 'Telegram RTMP server:'
+        required: true
+        default: 'rtmps://dc1-1.rtmp.t.me/s/'
+      telegram_stream_key:
+        description: 'Telegram Translatsiya Kaliti (Stream Key):'
+        required: true
+      duration_minutes:
+        description: 'Efir davomiyligi (daqiqada):'
+        required: true
+        default: '130'
+
+jobs:
+  broadcast:
+    name: Microsoft Cloud Streamer
+    runs-on: ubuntu-latest
+    timeout-minutes: 360
+    steps:
+      - name: Jonli translatsiyani Telegramga yoqish
+        run: |
+          CHOICE="${{ github.event.inputs.channel }}"
+          CUSTOM_URL="${{ github.event.inputs.custom_stream_url }}"
+          SERVER="${{ github.event.inputs.telegram_server }}"
+          KEY="${{ github.event.inputs.telegram_stream_key }}"
+          DURATION="${{ github.event.inputs.duration_minutes }}"
+
+          if [[ "$CHOICE" == *"setanta1"* ]]; then
+            INPUT_URL="https://stream2.cinerama.uz/1263/tracks-v1a1/mono.m3u8"
+          elif [[ "$CHOICE" == *"setanta2"* ]]; then
+            INPUT_URL="https://stream2.cinerama.uz/1264/tracks-v1a1/mono.m3u8"
+          elif [[ "$CHOICE" == *"zortv"* ]]; then
+            INPUT_URL="https://stream13-uzbeeline.platform24.tv/mbrjwt/62b98071fbc4d73387474b50eb5be94f4e44a6f1-4783-0-uzt31709601-5-3588642606-1792857306-e128-aUZKS3cWnzKsSDC1DMh11CIP7nG1tjD-milqyaz54hw/index.m3u8"
+          else
+            INPUT_URL="$CUSTOM_URL"
+          fi
+
+          [[ "${SERVER}" != */ ]] && SERVER="${SERVER}/"
+          FULL_RTMP="${SERVER}${KEY}"
+          if [[ "$KEY" == rtmp* ]]; then
+            FULL_RTMP="$KEY"
+          fi
+
+          DURATION_SEC=$((DURATION * 60))
+          ffmpeg -re -i "$INPUT_URL" -c copy -t "$DURATION_SEC" -f flv "$FULL_RTMP"
