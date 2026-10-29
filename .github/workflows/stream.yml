@@ -35,19 +35,24 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 360
     steps:
-      - name: Jonli translatsiyani Telegramga yoqish
+      - name: Install FFmpeg
         run: |
-          CHOICE="${{ github.event.inputs.channel }}"
-          CUSTOM_URL="${{ github.event.inputs.custom_stream_url }}"
-          SERVER="${{ github.event.inputs.telegram_server }}"
-          KEY="${{ github.event.inputs.telegram_stream_key }}"
-          DURATION="${{ github.event.inputs.duration_minutes }}"
+          sudo apt update -y
+          sudo apt install -y ffmpeg
 
-          if [[ "$CHOICE" == *"setanta1"* ]]; then
+      - name: Jonli translatsiyani Telegramga yoqish
+        env:
+          CHANNEL: ${{ github.event.inputs.channel }}
+          CUSTOM_URL: ${{ github.event.inputs.custom_stream_url }}
+          SERVER: ${{ github.event.inputs.telegram_server }}
+          KEY: ${{ github.event.inputs.telegram_stream_key }}
+          DURATION: ${{ github.event.inputs.duration_minutes }}
+        run: |
+          if [[ "$CHANNEL" == *"setanta1"* ]]; then
             INPUT_URL="https://stream2.cinerama.uz/1263/tracks-v1a1/mono.m3u8"
-          elif [[ "$CHOICE" == *"setanta2"* ]]; then
+          elif [[ "$CHANNEL" == *"setanta2"* ]]; then
             INPUT_URL="https://stream2.cinerama.uz/1264/tracks-v1a1/mono.m3u8"
-          elif [[ "$CHOICE" == *"zortv"* ]]; then
+          elif [[ "$CHANNEL" == *"zortv"* ]]; then
             INPUT_URL="https://stream13-uzbeeline.platform24.tv/mbrjwt/62b98071fbc4d73387474b50eb5be94f4e44a6f1-4783-0-uzt31709601-5-3588642606-1792857306-e128-aUZKS3cWnzKsSDC1DMh11CIP7nG1tjD-milqyaz54hw/index.m3u8"
           else
             INPUT_URL="$CUSTOM_URL"
@@ -60,4 +65,6 @@ jobs:
           fi
 
           DURATION_SEC=$((DURATION * 60))
+
+          echo "Efir boshlanmoqda: $INPUT_URL -> Telegram"
           ffmpeg -re -i "$INPUT_URL" -c copy -t "$DURATION_SEC" -f flv "$FULL_RTMP"
